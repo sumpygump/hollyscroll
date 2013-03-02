@@ -71,11 +71,17 @@ class Hollyscroll(object):
 
             import mimetypes
             mimetype = mimetypes.guess_type(filename)[0]
-            if mimetype != None:
-                if not mimetype in HollyTypes.print_types:
-                    # force hex mode for non-print types
-                    self.mode = 'hex'
-                else:
+
+            # Get the file extension
+            # (splitext returns filename,extension)
+            fileExtension = os.path.splitext(filename)[1]
+
+            # Default to hex mode
+            self.mode = 'hex'
+
+            # print_types or print_extensions will force the mode to print
+            if mimetype != None and mimetype in HollyTypes.print_types \
+                or fileExtension in HollyTypes.print_extensions:
                     self.mode = 'print'
 
             try:
@@ -107,6 +113,9 @@ class HollyTypes(object):
     print_types = [
         'application/x-httpd-php',
         'text/plain',
+    ]
+    print_extensions = [
+        '.md',
     ]
 
 
