@@ -1,0 +1,133 @@
+#!/usr/bin/env python
+
+import os
+import time
+import random
+import sys
+
+class Hollyscroll(object):
+    current_file = ''
+    """Currently displayed file"""
+
+    filelist = []
+    """List of files to render"""
+
+    mode = 'print'
+    """Mode of operation: print or hex"""
+
+    modes = ['print', 'hex']
+
+    pause_time = 1
+    """Time in seconds between line prints"""
+
+    def __init__(self, filelist):
+        """Constructor"""
+        self.filelist = []
+
+        #if len(self.filelist) < 2:
+        #    if os.path.isdir(self.filelist[0]):
+        #        self.filelist = os.listdir(self.filelist[0])
+
+        for filename in filelist:
+            if os.path.isdir(filename):
+                self.populate_filelist(filename)
+
+        self.generate_pausetime()
+
+    def populate_filelist(self, path):
+        for root,dirs,files in os.walk(path):
+            if len(files):
+                for filename in files:
+                    self.filelist.append(root + '/' + filename)
+
+    def execute(self):
+        """Run the scroller"""
+        self.display_file_data()
+
+    def generate_pausetime(self):
+        """Set the pause time controlling the scroll speed"""
+        self.pause_time = random.random()
+
+    def next_mode(self):
+        try:
+            mode_index = self.modes.index(self.mode)
+            mode_index = mode_index + 1
+        except ValueError as error:
+            mode_index = 0
+
+        if mode_index >= len(self.modes):
+            mode_index = 0
+
+        self.mode = self.modes[mode_index]
+
+    def display_file_data(self):
+        for filename in self.filelist:
+            filename = os.path.realpath(filename)
+            self.current_file = filename
+            self.next_mode()
+
+            if os.path.isdir(filename):
+                continue
+
+            import mimetypes
+            mimetype = mimetypes.guess_type(filename)[0]
+            if mimetype != None:
+                if not mimetype in HollyTypes.print_types:
+                    # force hex mode for non-print types
+                    self.mode = 'hex'
+                else:
+                    self.mode = 'print'
+
+            try:
+                if self.mode == 'hex':
+                    lines = self.read_file_data_hex(filename)
+                else:
+                    lines = self.read_file_data_print(filename)
+            except:
+                continue
+
+            print '### [' + filename + ' ' + str(mimetype) + '] ###'
+            for line in lines:
+                print line,
+                time.sleep(self.pause_time)
+
+    def read_file_data_print(self, filename):
+        """Read in a file for print mode"""
+        file_data = open(filename)
+        return file_data.readlines()
+
+    def read_file_data_hex(self, filename):
+        """Read in a file for hex mode"""
+        cmd = "xxd '" + filename + "' > /tmp/holly"
+        os.system(cmd)
+        file_data = open('/tmp/holly')
+        return file_data.readlines()
+
+class HollyTypes(object):
+    print_types = [
+        'application/x-httpd-php',
+        'text/plain',
+    ]
+
+
+def select_path(path):
+    if not os.path.exists(path[0]):
+        return ['/etc/default']
+    realpath = os.path.realpath(path[0])
+    return [realpath]
+
+if __name__ == "__main__":
+    path = ['.']
+
+    if len(sys.argv) > 1:
+        sys.argv.pop(0)
+        path = select_path(sys.argv)
+
+    hollyscroll = Hollyscroll(path)
+
+    try:
+        hollyscroll.execute()
+    except KeyboardInterrupt as error:
+        print '---'
+
+    sys.exit(1)
