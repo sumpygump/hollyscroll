@@ -112,10 +112,15 @@ class Hollyscroll(object):
 class HollyTypes(object):
     print_types = [
         'application/x-httpd-php',
+        'application/json',
         'text/plain',
+        'text/x-csrc',
     ]
     print_extensions = [
         '.md',
+        '.php',
+        '.json',
+        '.yml',
     ]
 
 
