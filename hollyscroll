@@ -4,6 +4,9 @@ import os
 import time
 import random
 import sys
+import mimetypes
+
+from pprint import pprint # Pretty printing.
 
 class Hollyscroll(object):
     current_file = ''
@@ -24,21 +27,32 @@ class Hollyscroll(object):
         """Constructor"""
         self.filelist = []
 
-        #if len(self.filelist) < 2:
-        #    if os.path.isdir(self.filelist[0]):
-        #        self.filelist = os.listdir(self.filelist[0])
-
+        print "Reading file list"
         for filename in filelist:
             if os.path.isdir(filename):
                 self.populate_filelist(filename)
+            else:
+                self.filelist.append(filename)
+
+        print "{0} files to display".format(len(self.filelist))
 
         self.generate_pausetime()
 
     def populate_filelist(self, path):
+        """Populate the filelist by recursing a path"""
         for root,dirs,files in os.walk(path):
-            if len(files):
-                for filename in files:
-                    self.filelist.append(root + '/' + filename)
+            # modify "dirs" in place to prevent
+            # future code in os.walk from seeing those
+            # that start with "."
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+
+            if len(files) == 0:
+                continue
+
+            for filename in files:
+                if filename.startswith('.'):
+                    continue
+                self.filelist.append(root + '/' + filename)
 
     def execute(self):
         """Run the scroller"""
@@ -61,7 +75,10 @@ class Hollyscroll(object):
         self.mode = self.modes[mode_index]
 
     def display_file_data(self):
+        hollytypes = HollyTypes()
+
         for filename in self.filelist:
+            self.generate_pausetime()
             filename = os.path.realpath(filename)
             self.current_file = filename
             self.next_mode()
@@ -69,7 +86,6 @@ class Hollyscroll(object):
             if os.path.isdir(filename):
                 continue
 
-            import mimetypes
             mimetype = mimetypes.guess_type(filename)[0]
 
             # Get the file extension
@@ -80,22 +96,34 @@ class Hollyscroll(object):
             self.mode = 'hex'
 
             # print_types or print_extensions will force the mode to print
-            if mimetype != None and mimetype in HollyTypes.print_types \
-                or fileExtension in HollyTypes.print_extensions:
-                    self.mode = 'print'
+            if hollytypes.is_print_type(mimetype, fileExtension):
+                self.mode = 'print'
 
             try:
-                if self.mode == 'hex':
-                    lines = self.read_file_data_hex(filename)
-                else:
+                if self.mode == 'print':
                     lines = self.read_file_data_print(filename)
+                else:
+                    # last ditch effort to determine if file should be in print
+                    # mode
+                    first_line = self.read_first_line(filename)
+                    if (first_line[:2] == '#!'):
+                        # shebang found, switch to print mode
+                        self.mode = 'print'
+                        lines = self.read_file_data_print(filename)
+                    else:
+                        lines = self.read_file_data_hex(filename)
             except:
                 continue
 
-            print '### [' + filename + ' ' + str(mimetype) + '] ###'
+            print '### [' + filename + ' ' + str(mimetype) + '] ### ' + self.mode
             for line in lines:
                 print line,
                 time.sleep(self.pause_time)
+
+    def read_first_line(self, filename):
+        """Read the first line of a file"""
+        file_data = open(filename)
+        return file_data.readline()
 
     def read_file_data_print(self, filename):
         """Read in a file for print mode"""
@@ -111,28 +139,47 @@ class Hollyscroll(object):
 
 class HollyTypes(object):
     print_types = [
-        'application/x-httpd-php',
         'application/json',
-        'text/plain',
-        'text/x-csrc',
+        'application/x-httpd-php',
+        'application/xml',
     ]
+
     print_extensions = [
+        '.aux',
+        '.json',
+        '.log',
+        '.lua',
         '.md',
         '.php',
-        '.json',
         '.yml',
     ]
 
+    def is_print_type(self, mimetype, extension):
+        if mimetype != None and mimetype in self.print_types \
+            or extension in self.print_extensions:
+                return True
+
+        if mimetype != None and mimetype[:4] == 'text':
+            return True
+
+        return False
 
 def select_path(path):
-    if not os.path.exists(path[0]):
-        return ['/etc/default']
-    realpath = os.path.realpath(path[0])
-    return [realpath]
+    realpaths = []
+    for item in path:
+        if not os.path.exists(item):
+            sys.stderr.write("Warning: path '{0}' not found.\n".format(item))
+            continue
+        realpaths.append(os.path.realpath(item))
+
+    return realpaths
 
 if __name__ == "__main__":
+    # By default hollyscroll will use the current directory
     path = ['.']
 
+    # Check arguments. User can specify a list of arguments as files or
+    # directories to read and scroll.
     if len(sys.argv) > 1:
         sys.argv.pop(0)
         path = select_path(sys.argv)
@@ -144,4 +191,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt as error:
         print '---'
 
-    sys.exit(1)
+    sys.exit(0)
