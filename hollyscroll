@@ -5,6 +5,7 @@ import time
 import random
 import sys
 import mimetypes
+import re
 
 from pprint import pprint # Pretty printing.
 
@@ -19,6 +20,11 @@ class Hollyscroll(object):
     """Mode of operation: print or hex"""
 
     modes = ['print', 'hex']
+
+    output_style = 'normal'
+    """Output style"""
+
+    output_styles = ['normal', 'typewriter']
 
     pause_time = 1
     """Time in seconds between line prints"""
@@ -74,6 +80,9 @@ class Hollyscroll(object):
 
         self.mode = self.modes[mode_index]
 
+    def select_random_output_style(self):
+        self.output_style = random.choice(self.output_styles)
+
     def display_file_data(self):
         hollytypes = HollyTypes()
 
@@ -82,6 +91,7 @@ class Hollyscroll(object):
             filename = os.path.realpath(filename)
             self.current_file = filename
             self.next_mode()
+            self.select_random_output_style()
 
             if os.path.isdir(filename):
                 continue
@@ -117,8 +127,30 @@ class Hollyscroll(object):
 
             print '### [' + filename + ' ' + str(mimetype) + '] ### ' + self.mode
             for line in lines:
-                print line,
+                self.printline(line)
                 time.sleep(self.pause_time)
+            print
+
+    def printline(self, line):
+        if self.output_style == 'typewriter':
+            self.typeline(line),
+        else:
+            print(line),
+
+    def typeline(self, line):
+        # If the line starts with white space, don't echo out each space one at
+        # a time, but in one big chunk (it looks better)
+        startchar = len(re.match(r"\s*", line, re.UNICODE).group(0))
+        if startchar > 0:
+            sys.stdout.write('%s' % line[0:startchar])
+            sys.stdout.flush()
+            time.sleep(0.1)
+            line = line[startchar:]
+
+        for character in line:
+            sys.stdout.write('%s' % character)
+            sys.stdout.flush()
+            time.sleep(0.1)
 
     def read_first_line(self, filename):
         """Read the first line of a file"""
