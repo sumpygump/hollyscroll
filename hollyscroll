@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Hollyscroll is a program that scrolls text on a terminal"""
 
 import os
 import time
@@ -6,10 +7,15 @@ import random
 import sys
 import mimetypes
 import re
+import argparse
 
-from pprint import pprint # Pretty printing.
+VERSION="1.1"
+
+#from pprint import pprint # Pretty printing.
 
 class Hollyscroll(object):
+    """The text scrolling class"""
+
     current_file = ''
     """Currently displayed file"""
 
@@ -25,6 +31,9 @@ class Hollyscroll(object):
     """Output style"""
 
     output_styles = ['normal', 'typewriter']
+
+    alter_styles = True
+    """Whether styles should automatically alter"""
 
     pause_time = 1
     """Time in seconds between line prints"""
@@ -81,6 +90,9 @@ class Hollyscroll(object):
         self.mode = self.modes[mode_index]
 
     def select_random_output_style(self):
+        if not self.alter_styles:
+            return False
+
         self.output_style = random.choice(self.output_styles)
 
     def display_file_data(self):
@@ -196,9 +208,10 @@ class HollyTypes(object):
 
         return False
 
-def select_path(path):
+def select_path(paths):
+    """Select realpaths from list of strings"""
     realpaths = []
-    for item in path:
+    for item in paths:
         if not os.path.exists(item):
             sys.stderr.write("Warning: path '{0}' not found.\n".format(item))
             continue
@@ -207,16 +220,25 @@ def select_path(path):
     return realpaths
 
 if __name__ == "__main__":
-    # By default hollyscroll will use the current directory
-    path = ['.']
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
+    parser.add_argument('-s', '--style', choices=Hollyscroll.output_styles, help="Set output style mode")
+
+    # By default hollyscroll will use the current directory (.)
+    parser.add_argument('paths', metavar='path', nargs='*', default='.', help="Paths to files or directories to be scrolled")
+
+    # This will read sys.argv and process the above parser rules
+    args = parser.parse_args()
 
     # Check arguments. User can specify a list of arguments as files or
     # directories to read and scroll.
-    if len(sys.argv) > 1:
-        sys.argv.pop(0)
-        path = select_path(sys.argv)
+    path = select_path(args.paths)
 
     hollyscroll = Hollyscroll(path)
+
+    if args.style:
+        hollyscroll.output_style = args.style
+        hollyscroll.alter_styles = False
 
     try:
         hollyscroll.execute()
