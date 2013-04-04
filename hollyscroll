@@ -207,8 +207,19 @@ def select_path(path):
     return realpaths
 
 if __name__ == "__main__":
-    # By default hollyscroll will use the current directory
-    path = ['.']
+    parser = argparse.ArgumentParser(
+        add_help=True, 
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Scroll text on terminal window like in movies and TV shows",
+        epilog='''\
+Example:
+  hollyscroll ~/Documents
+
+You can also pipe in content from other programs:
+  ls -l | hollyscroll'''
+    )
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
+    parser.add_argument('-s', '--style', choices=Hollyscroll.output_styles, help="Set output style mode")
 
     # Check arguments. User can specify a list of arguments as files or
     # directories to read and scroll.
