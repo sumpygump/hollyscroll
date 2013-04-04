@@ -9,9 +9,7 @@ import mimetypes
 import re
 import argparse
 
-VERSION="1.1"
-
-#from pprint import pprint # Pretty printing.
+VERSION="1.2"
 
 class Hollyscroll(object):
     """The text scrolling class"""
@@ -42,14 +40,15 @@ class Hollyscroll(object):
         """Constructor"""
         self.filelist = []
 
-        print "Reading file list"
-        for filename in filelist:
-            if os.path.isdir(filename):
-                self.populate_filelist(filename)
-            else:
-                self.filelist.append(filename)
+        if filelist:
+            print "Reading file list"
+            for filename in filelist:
+                if os.path.isdir(filename):
+                    self.populate_filelist(filename)
+                else:
+                    self.filelist.append(filename)
 
-        print "{0} files to display".format(len(self.filelist))
+            print "{0} files to display".format(len(self.filelist))
 
         self.generate_pausetime()
 
@@ -94,6 +93,20 @@ class Hollyscroll(object):
             return False
 
         self.output_style = random.choice(self.output_styles)
+
+    def display_stream(self, stream):
+        while 1:
+            try:
+                line = stream.readline()
+                if line == '':
+                    break
+                self.printline(line)
+                time.sleep(self.pause_time)
+            except KeyboardInterrupt as error:
+                print '---'
+                break
+
+        print
 
     def display_file_data(self):
         hollytypes = HollyTypes()
@@ -230,19 +243,28 @@ if __name__ == "__main__":
     # This will read sys.argv and process the above parser rules
     args = parser.parse_args()
 
-    # Check arguments. User can specify a list of arguments as files or
-    # directories to read and scroll.
-    path = select_path(args.paths)
+    if sys.stdin.isatty():
+        # Check arguments. User can specify a list of arguments as files or
+        # directories to read and scroll.
+        path = select_path(args.paths)
+        hollyscroll = Hollyscroll(path)
 
-    hollyscroll = Hollyscroll(path)
+        if args.style:
+            hollyscroll.output_style = args.style
+            hollyscroll.alter_styles = False
 
-    if args.style:
-        hollyscroll.output_style = args.style
-        hollyscroll.alter_styles = False
+        try:
+            hollyscroll.execute()
+        except KeyboardInterrupt as error:
+            print '---'
+    else:
+        # Stdin mode, content is piped in from another program
+        # e.g. ls -l | hollyscroll -s normal
+        hollyscroll = Hollyscroll([])
 
-    try:
-        hollyscroll.execute()
-    except KeyboardInterrupt as error:
-        print '---'
+        if args.style:
+            hollyscroll.output_style = args.style
+
+        hollyscroll.display_stream(sys.stdin)
 
     sys.exit(0)
