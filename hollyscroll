@@ -241,6 +241,9 @@ class HollyTypes(object):
         '.md',
         '.asm',
         '.svg',
+        '.1',
+        '.cfg',
+        '.rst',
     ]
 
     def is_print_type(self, mimetype, extension):
