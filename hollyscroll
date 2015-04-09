@@ -71,6 +71,21 @@ class Hollyscroll(object):
     def execute(self):
         """Run the scroller"""
         self.display_file_data()
+    
+    def display_file_list(self):
+        """Display list of files and mimetypes"""
+        hollytypes = HollyTypes()
+
+        for filename in self.filelist:
+            filename = os.path.realpath(filename)
+
+            if os.path.isdir(filename):
+                continue
+
+            mimetype = mimetypes.guess_type(filename)[0]
+            mode = self.determine_mode(filename)
+
+            print '### [' + filename + ' ' + str(mimetype) + '] ### ' + mode
 
     def generate_pausetime(self):
         """Set the pause time controlling the scroll speed"""
@@ -109,8 +124,6 @@ class Hollyscroll(object):
         print
 
     def display_file_data(self):
-        hollytypes = HollyTypes()
-
         for filename in self.filelist:
             self.generate_pausetime()
             filename = os.path.realpath(filename)
@@ -122,31 +135,13 @@ class Hollyscroll(object):
                 continue
 
             mimetype = mimetypes.guess_type(filename)[0]
-
-            # Get the file extension
-            # (splitext returns filename,extension)
-            fileExtension = os.path.splitext(filename)[1]
-
-            # Default to hex mode
-            self.mode = 'hex'
-
-            # print_types or print_extensions will force the mode to print
-            if hollytypes.is_print_type(mimetype, fileExtension):
-                self.mode = 'print'
+            self.mode = self.determine_mode(filename)
 
             try:
                 if self.mode == 'print':
                     lines = self.read_file_data_print(filename)
                 else:
-                    # last ditch effort to determine if file should be in print
-                    # mode
-                    first_line = self.read_first_line(filename)
-                    if (first_line[:2] == '#!'):
-                        # shebang found, switch to print mode
-                        self.mode = 'print'
-                        lines = self.read_file_data_print(filename)
-                    else:
-                        lines = self.read_file_data_hex(filename)
+                    lines = self.read_file_data_hex(filename)
             except:
                 continue
 
@@ -155,6 +150,38 @@ class Hollyscroll(object):
                 self.printline(line)
                 time.sleep(self.pause_time)
             print
+
+    def determine_mode(self, filename):
+        hollytypes = HollyTypes()
+
+        mimetype = mimetypes.guess_type(filename)[0]
+
+        # Get the file extension
+        # (splitext returns filename,extension)
+        fileExtension = os.path.splitext(filename)[1]
+
+        # print_types or print_extensions will force the mode to print
+        if hollytypes.is_print_type(mimetype, fileExtension):
+            return 'print'
+        else:
+            print_basenames = [
+                'Makefile',
+                'README'
+            ]
+            if os.path.basename(filename) in print_basenames:
+                return 'print'
+            try:
+                # last ditch effort to determine if file should be in print
+                # mode
+                first_line = self.read_first_line(filename)
+                if (first_line[:2] == '#!'):
+                    # shebang found, switch to print mode
+                    return 'print'
+            except:
+                return 'hex'
+
+        # Fallback to hex mode
+        return 'hex'
 
     def printline(self, line):
         if self.output_style == 'typewriter':
@@ -203,12 +230,17 @@ class HollyTypes(object):
 
     print_extensions = [
         '.aux',
+        '.conf',
         '.json',
         '.log',
         '.lua',
         '.md',
         '.php',
         '.yml',
+        '.sbt',
+        '.md',
+        '.asm',
+        '.svg',
     ]
 
     def is_print_type(self, mimetype, extension):
@@ -246,6 +278,7 @@ You can also pipe in content from other programs:
     )
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
     parser.add_argument('-s', '--style', choices=Hollyscroll.output_styles, help="Set output style mode")
+    parser.add_argument('-l', '--list', action='store_true', help="Display list of files and mimes only")
 
     # By default hollyscroll will use the current directory (.)
     parser.add_argument('paths', metavar='path', nargs='*', default='.', help="Paths to files or directories to be scrolled")
@@ -264,7 +297,10 @@ You can also pipe in content from other programs:
             hollyscroll.alter_styles = False
 
         try:
-            hollyscroll.execute()
+            if args.list:
+                hollyscroll.display_file_list()
+            else:
+                hollyscroll.execute()
         except KeyboardInterrupt as error:
             print '---'
     else:
