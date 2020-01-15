@@ -41,14 +41,14 @@ class Hollyscroll(object):
         self.filelist = []
 
         if filelist:
-            print "Reading file list"
+            print("Reading file list")
             for filename in filelist:
                 if os.path.isdir(filename):
                     self.populate_filelist(filename)
                 else:
                     self.filelist.append(filename)
 
-            print "{0} files to display".format(len(self.filelist))
+            print("{0} files to display".format(len(self.filelist)))
 
         self.generate_pausetime()
 
@@ -103,10 +103,10 @@ class Hollyscroll(object):
                 self.printline(line)
                 time.sleep(self.pause_time)
             except KeyboardInterrupt as error:
-                print '---'
+                print('---')
                 break
 
-        print
+        print()
 
     def display_file_data(self):
         hollytypes = HollyTypes()
@@ -123,15 +123,11 @@ class Hollyscroll(object):
 
             mimetype = mimetypes.guess_type(filename)[0]
 
-            # Get the file extension
-            # (splitext returns filename,extension)
-            fileExtension = os.path.splitext(filename)[1]
-
             # Default to hex mode
             self.mode = 'hex'
 
             # print_types or print_extensions will force the mode to print
-            if hollytypes.is_print_type(mimetype, fileExtension):
+            if hollytypes.is_print_type(mimetype, filename):
                 self.mode = 'print'
 
             try:
@@ -150,11 +146,11 @@ class Hollyscroll(object):
             except:
                 continue
 
-            print '### [' + filename + ' ' + str(mimetype) + '] ### ' + self.mode
+            print('### [' + filename + ' ' + str(mimetype) + '] ### ' + self.mode)
             for line in lines:
                 self.printline(line)
                 time.sleep(self.pause_time)
-            print
+            print()
 
     def printline(self, line):
         if self.output_style == 'typewriter':
@@ -196,6 +192,7 @@ class Hollyscroll(object):
 
 class HollyTypes(object):
     print_types = [
+        'application/javascript',
         'application/json',
         'application/x-httpd-php',
         'application/xml',
@@ -203,15 +200,31 @@ class HollyTypes(object):
 
     print_extensions = [
         '.aux',
+        '.awk',
         '.json',
+        '.ini',
         '.log',
         '.lua',
         '.md',
         '.php',
+        '.phtml',
+        '.sql',
+        '.twig',
         '.yml',
     ]
 
-    def is_print_type(self, mimetype, extension):
+    print_filenames = [
+        'CHANGELOG'
+    ]
+
+    def is_print_type(self, mimetype, filename):
+        # Get the file extension
+        # (splitext returns filename,extension)
+        (filename, extension) = os.path.splitext(filename)
+
+        if os.path.split(filename)[1] in self.print_filenames:
+            return True
+
         if mimetype != None and mimetype in self.print_types \
             or extension in self.print_extensions:
                 return True
@@ -266,7 +279,7 @@ You can also pipe in content from other programs:
         try:
             hollyscroll.execute()
         except KeyboardInterrupt as error:
-            print '---'
+            print('---')
     else:
         # Stdin mode, content is piped in from another program
         # e.g. ls -l | hollyscroll -s normal
