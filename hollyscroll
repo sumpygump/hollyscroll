@@ -85,7 +85,7 @@ class Hollyscroll(object):
             mimetype = mimetypes.guess_type(filename)[0]
             mode = self.determine_mode(filename)
 
-            print '### [' + filename + ' ' + str(mimetype) + '] ### ' + mode
+            print('### [' + filename + ' ' + str(mimetype) + '] ### ' + mode)
 
     def generate_pausetime(self):
         """Set the pause time controlling the scroll speed"""
