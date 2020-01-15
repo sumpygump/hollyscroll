@@ -8,9 +8,9 @@ Python script that pointlessly scrolls text for you like on computer screens in 
 Clone git repository
 
     $ cd ~/bin
-    $ git clone git://github.com/sumpygump/hollyscroll.git hollyscroll-src
+    $ git clone https://github.com/sumpygump/hollyscroll.git hollyscroll-src
 
-Symlink script
+Symlink script (assuming `~/bin` is in your `$PATH`)
 
     $ ln -s hollyscroll-src/hollyscroll
 
@@ -27,6 +27,7 @@ optional arguments:
   -v, --version         show program's version number and exit
   -s {normal,typewriter}, --style {normal,typewriter}
                         Set output style mode
+  -l, --list            Display list of files and mimes only
 ```
 
 You can also pipe in content from other programs
