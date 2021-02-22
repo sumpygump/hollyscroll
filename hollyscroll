@@ -156,29 +156,9 @@ class Hollyscroll(object):
 
         mimetype = mimetypes.guess_type(filename)[0]
 
-        # Get the file extension
-        # (splitext returns filename,extension)
-        fileExtension = os.path.splitext(filename)[1]
-
         # print_types or print_extensions will force the mode to print
-        if hollytypes.is_print_type(mimetype, fileExtension):
+        if hollytypes.is_print_type(mimetype, filename):
             return 'print'
-        else:
-            print_basenames = [
-                'Makefile',
-                'README'
-            ]
-            if os.path.basename(filename) in print_basenames:
-                return 'print'
-            try:
-                # last ditch effort to determine if file should be in print
-                # mode
-                first_line = self.read_first_line(filename)
-                if (first_line[:2] == '#!'):
-                    # shebang found, switch to print mode
-                    return 'print'
-            except:
-                return 'hex'
 
         # Fallback to hex mode
         return 'hex'
@@ -187,7 +167,7 @@ class Hollyscroll(object):
         if self.output_style == 'typewriter':
             self.typeline(line),
         else:
-            print(line),
+            print(line.strip()),
 
     def typeline(self, line):
         # If the line starts with white space, don't echo out each space one at
@@ -203,11 +183,6 @@ class Hollyscroll(object):
             sys.stdout.write('%s' % character)
             sys.stdout.flush()
             time.sleep(0.1)
-
-    def read_first_line(self, filename):
-        """Read the first line of a file"""
-        file_data = open(filename)
-        return file_data.readline()
 
     def read_file_data_print(self, filename):
         """Read in a file for print mode"""
@@ -252,16 +227,25 @@ class HollyTypes(object):
         '.rst',
     ]
 
+    # List of filenames without extensions that should be print mode
     print_filenames = [
-        'CHANGELOG'
+        'makefile',
+        'readme',
+        'changelog',
+        'license'
     ]
+
+    def read_first_line(self, filename):
+        """Read the first line of a file"""
+        file_data = open(filename)
+        return file_data.readline()
 
     def is_print_type(self, mimetype, filename):
         # Get the file extension
         # (splitext returns filename,extension)
         (filename, extension) = os.path.splitext(filename)
 
-        if os.path.split(filename)[1] in self.print_filenames:
+        if os.path.split(filename)[1].lower() in self.print_filenames:
             return True
 
         if mimetype != None and mimetype in self.print_types \
@@ -270,6 +254,15 @@ class HollyTypes(object):
 
         if mimetype != None and mimetype[:4] == 'text':
             return True
+
+        try:
+            # last ditch effort to determine if file should be print mode
+            first_line = self.read_first_line(filename)
+            if (first_line[:2] == '#!'):
+                # shebang found, switch to print mode
+                return True
+        except:
+            return False
 
         return False
 
