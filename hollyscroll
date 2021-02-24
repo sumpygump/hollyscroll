@@ -36,7 +36,10 @@ class Hollyscroll(object):
     pause_time = 1
     """Time in seconds between line prints"""
 
-    def __init__(self, filelist):
+    repeat = False
+    """Whether should be on repeat mode"""
+
+    def __init__(self, filelist, repeat=False):
         """Constructor"""
         self.filelist = []
 
@@ -50,6 +53,7 @@ class Hollyscroll(object):
 
             print("{0} files to display".format(len(self.filelist)))
 
+        self.repeat = repeat
         self.generate_pausetime()
 
     def populate_filelist(self, path):
@@ -70,8 +74,12 @@ class Hollyscroll(object):
 
     def execute(self):
         """Run the scroller"""
-        self.display_file_data()
-    
+        if self.repeat:
+            while True:
+                self.display_file_data()
+        else:
+            self.display_file_data()
+
     def display_file_list(self):
         """Display list of files and mimetypes"""
         hollytypes = HollyTypes()
@@ -281,7 +289,7 @@ def select_path(paths):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        add_help=True, 
+        add_help=True,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Scroll text on terminal window like in movies and TV shows",
         epilog='''\
@@ -294,6 +302,7 @@ You can also pipe in content from other programs:
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + VERSION)
     parser.add_argument('-s', '--style', choices=Hollyscroll.output_styles, help="Set output style mode")
     parser.add_argument('-l', '--list', action='store_true', help="Display list of files and mimes only")
+    parser.add_argument('-r', '--repeat', action='store_true', help="Repeat listing the files after done")
 
     # By default hollyscroll will use the current directory (.)
     parser.add_argument('paths', metavar='path', nargs='*', default='.', help="Paths to files or directories to be scrolled")
@@ -305,7 +314,7 @@ You can also pipe in content from other programs:
         # Check arguments. User can specify a list of arguments as files or
         # directories to read and scroll.
         path = select_path(args.paths)
-        hollyscroll = Hollyscroll(path)
+        hollyscroll = Hollyscroll(path, repeat=args.repeat)
 
         if args.style:
             hollyscroll.output_style = args.style
