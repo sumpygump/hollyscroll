@@ -201,12 +201,14 @@ class HollyTypes(object):
         'application/javascript',
         'application/json',
         'application/x-httpd-php',
+        'application/x-sh',
         'application/xml',
     ]
 
     print_extensions = [
         '.aux',
         '.awk',
+        '.bat',
         '.conf',
         '.json',
         '.ini',
