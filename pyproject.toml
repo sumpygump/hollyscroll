@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hollyscroll"
+version = "1.2.0"
+authors = [
+    { name="Jansen Price", email="jansen.price@gmail.com" },
+]
+description = "Scroll text on the terminal screen like in movies"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/sumpygump/hollyscroll"
+"Bug Tracker" = "https://github.com/sumpygump/hollyscroll/issues"
+
+[project.scripts]
+hollyscroll = "hollyscroll"
