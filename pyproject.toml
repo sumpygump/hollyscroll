@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hollyscroll"
-version = "1.2.0"
+version = "1.2.1"
 authors = [
     { name="Jansen Price", email="jansen.price@gmail.com" },
 ]
@@ -22,4 +22,4 @@ classifiers = [
 "Bug Tracker" = "https://github.com/sumpygump/hollyscroll/issues"
 
 [project.scripts]
-hollyscroll = "hollyscroll"
+hollyscroll = "hollyscroll:main"

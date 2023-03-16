@@ -3,7 +3,13 @@ hollyscroll
 
 Python script that pointlessly scrolls text for you like on computer screens in movies and TV shows
 
-## Installation
+## Installation with pip
+
+```
+pip install hollyscroll
+```
+
+## Manual Installation
 
 Clone git repository
 
@@ -12,12 +18,14 @@ Clone git repository
 
 Symlink script (assuming `~/bin` is in your `$PATH`)
 
-    $ ln -s hollyscroll-src/hollyscroll
+    $ ln -s hollyscroll-src/hollyscroll.py hollyscroll
 
 ## Usage
 
 ```
-usage: hollyscroll [-h] [-v] [-s {normal,typewriter}] [path [path ...]]
+usage: hollyscroll [-h] [-v] [-s {normal,typewriter}] [-l] [-r] [path ...]
+
+Scroll text on terminal window like in movies and TV shows
 
 positional arguments:
   path                  Paths to files or directories to be scrolled
@@ -28,10 +36,12 @@ optional arguments:
   -s {normal,typewriter}, --style {normal,typewriter}
                         Set output style mode
   -l, --list            Display list of files and mimes only
+  -r, --repeat          Repeat listing the files after done
+
+Example:
+  hollyscroll ~/Documents
+
+You can also pipe in content from other programs:
+  ls -l | hollyscroll
+  dmesg | hollyscroll
 ```
-
-You can also pipe in content from other programs
-
-    ls -l | hollyscroll
-
-    tail -f /var/log/apache2/error.log | hollyscroll
