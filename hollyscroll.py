@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 """Hollyscroll is a program that scrolls text on a terminal"""
 
-import os
-import time
-import random
-import sys
-import mimetypes
-import re
 import argparse
+import io
+import mimetypes
+import os
+import random
+import re
+import sys
+import time
 
 VERSION = "1.2.1"
 
@@ -117,12 +118,12 @@ class Hollyscroll(object):
         self.output_style = random.choice(self.output_styles)
 
     def display_stream(self, stream):
-        while 1:
+        while True:
             try:
                 line = stream.readline()
                 if line == "":
                     break
-                self.printline(line)
+                self.printline(line.rstrip())
                 time.sleep(self.pause_time)
             except KeyboardInterrupt:
                 print("---")
@@ -146,16 +147,17 @@ class Hollyscroll(object):
 
             try:
                 if self.mode == "print":
-                    lines = self.read_file_data_print(filename)
+                    stream = self.read_file_data_print(filename)
                 else:
-                    lines = self.read_file_data_hex(filename)
+                    stream = self.read_file_data_hex(filename)
             except:  # Handle ANY exception here.  pylint: disable=bare-except
                 continue
 
             print("### [" + filename + " " + str(mimetype) + "] ### " + self.mode)
-            for line in lines:
+            for line in stream:
                 self.printline(line)
                 time.sleep(self.pause_time)
+            stream.close()
             print()
 
     def determine_mode(self, filename):
@@ -193,17 +195,13 @@ class Hollyscroll(object):
 
     def read_file_data_print(self, filename):
         """Read in a file for print mode"""
-        with open(filename, encoding="utf-8") as file_data:
-            return file_data.readlines()
-        return []
+        return io.open(filename, encoding="utf-8")
 
     def read_file_data_hex(self, filename):
         """Read in a file for hex mode"""
         cmd = "xxd '{}' > /tmp/holly".format(filename)
         os.system(cmd)
-        with open("/tmp/holly", encoding="utf-8") as file_data:
-            return file_data.readlines()
-        return []
+        return io.open("/tmp/holly", encoding="utf-8")
 
 
 class HollyTypes(object):
@@ -218,27 +216,28 @@ class HollyTypes(object):
     ]
 
     print_extensions = [
+        ".1",
+        ".asm",
         ".aux",
         ".awk",
         ".bat",
+        ".cfg",
         ".conf",
-        ".json",
         ".ini",
+        ".json",
         ".log",
         ".lua",
         ".md",
+        ".md",
         ".php",
         ".phtml",
-        ".sql",
-        ".twig",
-        ".yml",
-        ".sbt",
-        ".md",
-        ".asm",
-        ".svg",
-        ".1",
-        ".cfg",
         ".rst",
+        ".sbt",
+        ".sql",
+        ".svg",
+        ".twig",
+        ".yaml",
+        ".yml",
     ]
 
     # List of filenames without extensions that should be print mode
