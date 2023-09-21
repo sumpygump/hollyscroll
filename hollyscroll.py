@@ -83,8 +83,6 @@ class Hollyscroll(object):
 
     def display_file_list(self):
         """Display list of files and mimetypes"""
-        hollytypes = HollyTypes()
-
         for filename in self.filelist:
             filename = os.path.realpath(filename)
 
@@ -104,7 +102,7 @@ class Hollyscroll(object):
         try:
             mode_index = self.modes.index(self.mode)
             mode_index = mode_index + 1
-        except ValueError as error:
+        except ValueError:
             mode_index = 0
 
         if mode_index >= len(self.modes):
@@ -126,7 +124,7 @@ class Hollyscroll(object):
                     break
                 self.printline(line)
                 time.sleep(self.pause_time)
-            except KeyboardInterrupt as error:
+            except KeyboardInterrupt:
                 print("---")
                 break
 
@@ -151,7 +149,7 @@ class Hollyscroll(object):
                     lines = self.read_file_data_print(filename)
                 else:
                     lines = self.read_file_data_hex(filename)
-            except:
+            except:  # Handle ANY exception here.  pylint: disable=bare-except
                 continue
 
             print("### [" + filename + " " + str(mimetype) + "] ### " + self.mode)
@@ -174,9 +172,9 @@ class Hollyscroll(object):
 
     def printline(self, line):
         if self.output_style == "typewriter":
-            self.typeline(line),
+            self.typeline(line)
         else:
-            print(line.strip()),
+            print(line.strip())
 
     def typeline(self, line):
         # If the line starts with white space, don't echo out each space one at
@@ -195,18 +193,22 @@ class Hollyscroll(object):
 
     def read_file_data_print(self, filename):
         """Read in a file for print mode"""
-        file_data = open(filename)
-        return file_data.readlines()
+        with open(filename, encoding="utf-8") as file_data:
+            return file_data.readlines()
+        return []
 
     def read_file_data_hex(self, filename):
         """Read in a file for hex mode"""
-        cmd = "xxd '" + filename + "' > /tmp/holly"
+        cmd = "xxd '{}' > /tmp/holly".format(filename)
         os.system(cmd)
-        file_data = open("/tmp/holly")
-        return file_data.readlines()
+        with open("/tmp/holly", encoding="utf-8") as file_data:
+            return file_data.readlines()
+        return []
 
 
 class HollyTypes(object):
+    """Class for handling different file type scenarios"""
+
     print_types = [
         "application/javascript",
         "application/json",
@@ -244,8 +246,9 @@ class HollyTypes(object):
 
     def read_first_line(self, filename):
         """Read the first line of a file"""
-        file_data = open(filename)
-        return file_data.readline()
+        with open(filename, encoding="utf-8") as file_data:
+            return file_data.readline()
+        return ""
 
     def is_print_type(self, mimetype, filename):
         # Get the file extension
@@ -256,13 +259,13 @@ class HollyTypes(object):
             return True
 
         if (
-            mimetype != None
+            mimetype is not None
             and mimetype in self.print_types
             or extension in self.print_extensions
         ):
             return True
 
-        if mimetype != None and mimetype[:4] == "text":
+        if mimetype is not None and mimetype[:4] == "text":
             return True
 
         try:
@@ -271,7 +274,7 @@ class HollyTypes(object):
             if first_line[:2] == "#!":
                 # shebang found, switch to print mode
                 return True
-        except:
+        except:  # Don't fail from anything pylint: disable=bare-except
             return False
 
         return False
@@ -344,7 +347,7 @@ You can also pipe in content from other programs:
                 hollyscroll.display_file_list()
             else:
                 hollyscroll.execute()
-        except KeyboardInterrupt as error:
+        except KeyboardInterrupt:
             print("---")
     else:
         # Stdin mode, content is piped in from another program
