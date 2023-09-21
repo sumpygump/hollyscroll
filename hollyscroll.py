@@ -235,6 +235,7 @@ class HollyTypes(object):
         ".sbt",
         ".sql",
         ".svg",
+        ".toml",
         ".twig",
         ".yaml",
         ".yml",
