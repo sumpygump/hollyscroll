@@ -174,7 +174,7 @@ class Hollyscroll(object):
         if self.output_style == "typewriter":
             self.typeline(line)
         else:
-            print(line.strip())
+            print(line.rstrip())
 
     def typeline(self, line):
         # If the line starts with white space, don't echo out each space one at
