@@ -7,10 +7,12 @@ import mimetypes
 import os
 import random
 import re
+import string
 import sys
 import time
 
-VERSION = "1.2.1"
+VERSION = "1.2.2"
+PRINTABLE_CHARS = [ord(x) for x in string.printable[:-6]]
 
 
 class Hollyscroll(object):
@@ -41,7 +43,10 @@ class Hollyscroll(object):
     repeat = False
     """Whether should be on repeat mode"""
 
-    def __init__(self, filelist, repeat=False):
+    columns = 120
+    """Width of the terminal columns"""
+
+    def __init__(self, filelist, repeat=False, columns=120):
         """Constructor"""
         self.filelist = []
 
@@ -56,6 +61,7 @@ class Hollyscroll(object):
             print("{0} files to display".format(len(self.filelist)))
 
         self.repeat = repeat
+        self.columns = columns
         self.generate_pausetime()
 
     def populate_filelist(self, path):
@@ -118,13 +124,29 @@ class Hollyscroll(object):
         self.output_style = random.choice(self.output_styles)
 
     def display_stream(self, stream):
+        reading_as_text = True
         while True:
             try:
-                line = stream.readline()
-                if line == "":
+                if reading_as_text:
+                    # Read two bytes first to see if we need to switch to binary mode
+                    line = stream.readline(2)
+                    line = "{}{}".format(line, stream.readline())
+                else:
+                    line = stream.buffer.read(28)
+
+                if line in ("", b""):
                     break
+
                 self.printline(line.rstrip())
                 time.sleep(self.pause_time)
+            except UnicodeDecodeError as e:
+                reading_as_text = False
+                continue
+                # print(e)
+                # line = stream.buffer.read(3)
+                # self.mode = "hex"
+                # self.printline(line)
+                # time.sleep(self.pause_time)
             except KeyboardInterrupt:
                 print("---")
                 break
@@ -145,19 +167,32 @@ class Hollyscroll(object):
             mimetype = mimetypes.guess_type(filename)[0]
             self.mode = self.determine_mode(filename)
 
+            print("### [" + filename + " " + str(mimetype) + "] ### " + self.mode)
+
             try:
                 if self.mode == "print":
-                    stream = self.read_file_data_print(filename)
+                    with io.open(filename, "r", encoding="utf-8") as stream:
+                        for line in stream:
+                            self.printline(line)
+                            time.sleep(self.pause_time)
                 else:
-                    stream = self.read_file_data_hex(filename)
-            except:  # Handle ANY exception here.  pylint: disable=bare-except
+                    size = self.determine_xxd_size()
+                    print("size", size)
+                    # size = int(self.columns / 4.0)
+                    with io.open(filename, "rb") as stream:
+                        offset = 0
+                        while True:
+                            buf = stream.read(size)
+                            if not buf:
+                                break
+                            line = self.xxd_line(buf, line_offset=offset, size=size)
+                            self.printline(line)
+                            time.sleep(self.pause_time)
+                            offset += 1
+            # pylint: disable=broad-exception-caught
+            except Exception:  # Handle ANY exception here.
                 continue
 
-            print("### [" + filename + " " + str(mimetype) + "] ### " + self.mode)
-            for line in stream:
-                self.printline(line)
-                time.sleep(self.pause_time)
-            stream.close()
             print()
 
     def determine_mode(self, filename):
@@ -172,8 +207,16 @@ class Hollyscroll(object):
         # Fallback to hex mode
         return "hex"
 
+    def determine_xxd_size(self):
+        # This calculation will ensure the right number of bytes to focus on in
+        # the xxd translation accounting for the terminal size
+        size = int(self.columns / 4.2)
+        return size if size % 2 == 0 else size - 1
+
     def printline(self, line):
         if self.output_style == "typewriter":
+            if line[-1] != "\n":
+                line = "{}\n".format(line)
             self.typeline(line)
         else:
             print(line.rstrip())
@@ -193,15 +236,24 @@ class Hollyscroll(object):
             sys.stdout.flush()
             time.sleep(0.1)
 
-    def read_file_data_print(self, filename):
-        """Read in a file for print mode"""
-        return io.open(filename, encoding="utf-8")
+    def xxd_line(self, buf, line_offset=0, size=16):
+        """Make an xxd line from some bytes"""
 
-    def read_file_data_hex(self, filename):
-        """Read in a file for hex mode"""
-        cmd = "xxd '{}' > /tmp/holly".format(filename)
-        os.system(cmd)
-        return io.open("/tmp/holly", encoding="utf-8")
+        buf_hex = buf.hex()
+        octets_group_count = 4
+        panel_b_width = round(size * 2 + ((size * 2 / octets_group_count) - 1))
+
+        template = "{0}: {1:<MAX}  {2}".replace("MAX", str(panel_b_width))
+        return template.format(
+            "{:07x}".format(line_offset * size),
+            " ".join(
+                [
+                    "".join(buf_hex[i : i + octets_group_count])
+                    for i in range(0, len(buf_hex), octets_group_count)
+                ]
+            ),
+            "".join([chr(c) if c in PRINTABLE_CHARS else "." for c in buf]),
+        )
 
 
 class HollyTypes(object):
@@ -331,12 +383,13 @@ You can also pipe in content from other programs:
 
     # This will read sys.argv and process the above parser rules
     args = parser.parse_args()
+    columns = os.get_terminal_size().columns
 
     if sys.stdin.isatty():
         # Check arguments. User can specify a list of arguments as files or
         # directories to read and scroll.
         path = select_path(args.paths)
-        hollyscroll = Hollyscroll(path, repeat=args.repeat)
+        hollyscroll = Hollyscroll(path, repeat=args.repeat, columns=columns)
 
         if args.style:
             hollyscroll.output_style = args.style
