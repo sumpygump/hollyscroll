@@ -125,33 +125,43 @@ class Hollyscroll(object):
 
     def display_stream(self, stream):
         reading_as_text = True
+        offset = 0
+        size = self.determine_xxd_size()
         while True:
             try:
                 if reading_as_text:
                     # Read two bytes first to see if we need to switch to binary mode
                     line = stream.readline(2)
                     line = "{}{}".format(line, stream.readline())
+                    if line in ("", b""):
+                        break
+
+                    self.printline(line.rstrip())
+                    time.sleep(self.pause_time)
                 else:
-                    line = stream.buffer.read(28)
-
-                if line in ("", b""):
-                    break
-
-                self.printline(line.rstrip())
-                time.sleep(self.pause_time)
-            except UnicodeDecodeError as e:
+                    offset = self.display_binary_stream(stream, size, offset)
+                    if offset is None:
+                        break
+            except UnicodeDecodeError:
                 reading_as_text = False
+                offset = self.display_binary_stream(stream, size, offset)
+                if offset is None:
+                    break
                 continue
-                # print(e)
-                # line = stream.buffer.read(3)
-                # self.mode = "hex"
-                # self.printline(line)
-                # time.sleep(self.pause_time)
             except KeyboardInterrupt:
                 print("---")
                 break
 
         print()
+
+    def display_binary_stream(self, stream, size=16, offset=0):
+        buf = stream.buffer.read(size)
+        if not buf:
+            return None
+        line = self.xxd_line(buf, line_offset=offset, size=size)
+        self.printline(line)
+        time.sleep(self.pause_time)
+        return offset + 1
 
     def display_file_data(self):
         for filename in self.filelist:
@@ -177,8 +187,6 @@ class Hollyscroll(object):
                             time.sleep(self.pause_time)
                 else:
                     size = self.determine_xxd_size()
-                    print("size", size)
-                    # size = int(self.columns / 4.0)
                     with io.open(filename, "rb") as stream:
                         offset = 0
                         while True:
@@ -210,7 +218,7 @@ class Hollyscroll(object):
     def determine_xxd_size(self):
         # This calculation will ensure the right number of bytes to focus on in
         # the xxd translation accounting for the terminal size
-        size = int(self.columns / 4.2)
+        size = int(self.columns / 4.3)
         return size if size % 2 == 0 else size - 1
 
     def printline(self, line):
